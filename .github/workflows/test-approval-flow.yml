@@ -20,7 +20,7 @@ on:
         default: '["prod-cluster-use1", "prod-cluster-usw2"]'
   schedule:
     # Example: Runs every 6 hours. You can change this cron expression.
-    - cron: '0 */6 * * *'
+    - cron: '*/2 * * * *'
 
 jobs:
   # =================================================================
