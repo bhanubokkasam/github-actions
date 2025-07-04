@@ -18,9 +18,9 @@ on:
         description: 'Prod clusters (JSON array string)'
         required: true
         default: '["prod-cluster-use1", "prod-cluster-usw2"]'
-  schedule:
-    # Example: Runs every 6 hours. You can change this cron expression.
-    - cron: '*/2 * * * *'
+#   schedule:
+#     # Example: Runs every 6 hours. You can change this cron expression.
+#     - cron: '*/2 * * * *'
 
 jobs:
   # =================================================================
