@@ -1,0 +1,157 @@
+# .github/workflows/rollout-restart.yml
+
+name: Deploy | EKS Rollout Restart
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_name_prefix:
+        description: 'Prefix for the deployment name (e.g., my-app). The env name (demo, uat, prod) will be appended.'
+        required: true
+        default: 'my-app'
+      timeout:
+        description: 'Timeout for rollout status check (e.g., 5m, 10m)'
+        required: true
+        default: '5m'
+
+jobs:
+  # =================================================================
+  #  DEPLOY TO DEMO
+  # =================================================================
+  deploy_demo:
+    name: "🚀 Rollout Restart in Demo"
+    runs-on: ubuntu-latest
+    environment: demo # No approval needed for demo
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define all your demo cluster targets here
+        include:
+          - aws-region: "us-east-1"
+            aws-account: "111111111111" # Your Demo AWS Account ID
+            cluster-name: "demo-cluster-use1"
+          - aws-region: "us-west-2"
+            aws-account: "111111111111"
+            cluster-name: "demo-cluster-usw2"
+
+    steps:
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DEMO_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ matrix.aws-region }}
+
+      - name: "Set up Kubeconfig"
+        uses: aws-actions/amazon-eks-set-context@v1
+        with:
+          cluster-name: ${{ matrix.cluster-name }}
+
+      - name: "Restart and Verify Deployment"
+        run: |
+          DEPLOYMENT_NAME="${{ github.event.inputs.deployment_name_prefix }}-demo"
+          echo "Issuing rollout restart for ${DEPLOYMENT_NAME} in cluster ${{ matrix.cluster-name }}..."
+          kubectl rollout restart deployment/${DEPLOYMENT_NAME}
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} --timeout=${{ github.event.inputs.timeout }}
+
+  # =================================================================
+  #  APPROVAL GATE FOR UAT
+  # =================================================================
+  wait_for_uat_approval:
+    name: "✋ Wait for UAT Approval"
+    runs-on: ubuntu-latest
+    needs: deploy_demo
+    environment:
+      name: uat # This environment should have a required reviewer
+    steps:
+      - run: echo "Approval received. Proceeding to UAT."
+
+  # =================================================================
+  #  DEPLOY TO UAT
+  # =================================================================
+  deploy_uat:
+    name: "🚀 Rollout Restart in UAT"
+    runs-on: ubuntu-latest
+    needs: wait_for_uat_approval
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define all your UAT cluster targets here
+        include:
+          - aws-region: "eu-west-1"
+            aws-account: "222222222222" # Your UAT AWS Account ID
+            cluster-name: "uat-cluster-euw1"
+
+    steps:
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.UAT_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.UAT_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ matrix.aws-region }}
+
+      - name: "Set up Kubeconfig"
+        uses: aws-actions/amazon-eks-set-context@v1
+        with:
+          cluster-name: ${{ matrix.cluster-name }}
+
+      - name: "Restart and Verify Deployment"
+        run: |
+          DEPLOYMENT_NAME="${{ github.event.inputs.deployment_name_prefix }}-uat"
+          echo "Issuing rollout restart for ${DEPLOYMENT_NAME} in cluster ${{ matrix.cluster-name }}..."
+          kubectl rollout restart deployment/${DEPLOYMENT_NAME}
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} --timeout=${{ github.event.inputs.timeout }}
+
+  # =================================================================
+  #  APPROVAL GATE FOR PROD
+  # =================================================================
+  wait_for_prod_approval:
+    name: "✋ Wait for Prod Approval"
+    runs-on: ubuntu-latest
+    needs: deploy_uat
+    environment:
+      name: prod # This environment should have a required reviewer
+    steps:
+      - run: echo "Approval received. Proceeding to Production."
+
+  # =================================================================
+  #  DEPLOY TO PROD
+  # =================================================================
+  deploy_prod:
+    name: "🚀 Rollout Restart in Production"
+    runs-on: ubuntu-latest
+    needs: wait_for_prod_approval
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define all your Prod cluster targets here
+        include:
+          - aws-region: "us-east-1"
+            aws-account: "333333333333" # Your Prod AWS Account ID
+            cluster-name: "prod-cluster-use1"
+          - aws-region: "us-west-2"
+            aws-account: "444444444444" # Another Prod AWS Account ID
+            cluster-name: "prod-cluster-usw2"
+
+    steps:
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ matrix.aws-region }}
+
+      - name: "Set up Kubeconfig"
+        uses: aws-actions/amazon-eks-set-context@v1
+        with:
+          cluster-name: ${{ matrix.cluster-name }}
+
+      - name: "Restart and Verify Deployment"
+        run: |
+          DEPLOYMENT_NAME="${{ github.event.inputs.deployment_name_prefix }}-prod"
+          echo "Issuing rollout restart for ${DEPLOYMENT_NAME} in cluster ${{ matrix.cluster-name }}..."
+          kubectl rollout restart deployment/${DEPLOYMENT_NAME}
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} --timeout=${{ github.event.inputs.timeout }}

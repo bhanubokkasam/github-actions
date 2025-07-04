@@ -1,0 +1,101 @@
+# .github/workflows/test-approval-flow.yml
+
+name: Test | Approval & Matrix Flow
+
+on:
+  workflow_dispatch:
+    inputs:
+      demo_clusters:
+        description: 'Demo clusters (JSON array string)'
+        required: true
+        default: '["demo-cluster-use1", "demo-cluster-usw2"]'
+      uat_clusters:
+        description: 'UAT clusters (JSON array string)'
+        required: true
+        default: '["uat-cluster-euw1"]'
+      prod_clusters:
+        description: 'Prod clusters (JSON array string)'
+        required: true
+        default: '["prod-cluster-use1", "prod-cluster-usw2"]'
+
+jobs:
+  # =================================================================
+  #  SIMULATE DEPLOY TO DEMO
+  # =================================================================
+  deploy_demo:
+    name: "🧪 [SIM] Rollout in Demo"
+    runs-on: ubuntu-latest
+    environment: demo
+    strategy:
+      fail-fast: false
+      matrix:
+        cluster: ${{ fromJSON(github.event.inputs.demo_clusters) }}
+
+    steps:
+      - name: "Simulate Rollout Restart"
+        run: |
+          echo "This is a simulation."
+          echo "PRETEND: Restarting deployment in cluster ${{ matrix.cluster }}"
+          sleep 10 # Simulate work
+
+  # =================================================================
+  #  APPROVAL GATE FOR UAT
+  # =================================================================
+  wait_for_uat_approval:
+    name: "✋ Wait for UAT Approval"
+    runs-on: ubuntu-latest
+    needs: deploy_demo
+    environment:
+      name: uat # This environment should have a required reviewer
+    steps:
+      - run: echo "Approval received. Proceeding to UAT."
+
+  # =================================================================
+  #  SIMULATE DEPLOY TO UAT
+  # =================================================================
+  deploy_uat:
+    name: "🧪 [SIM] Rollout in UAT"
+    runs-on: ubuntu-latest
+    needs: wait_for_uat_approval
+    strategy:
+      fail-fast: false
+      matrix:
+        cluster: ${{ fromJSON(github.event.inputs.uat_clusters) }}
+
+    steps:
+      - name: "Simulate Rollout Restart"
+        run: |
+          echo "This is a simulation."
+          echo "PRETEND: Restarting deployment in cluster ${{ matrix.cluster }}"
+          sleep 10 # Simulate work
+
+  # =================================================================
+  #  APPROVAL GATE FOR PROD
+  # =================================================================
+  wait_for_prod_approval:
+    name: "✋ Wait for Prod Approval"
+    runs-on: ubuntu-latest
+    needs: deploy_uat
+    environment:
+      name: prod # This environment should have a required reviewer
+    steps:
+      - run: echo "Approval received. Proceeding to Production."
+
+  # =================================================================
+  #  SIMULATE DEPLOY TO PROD
+  # =================================================================
+  deploy_prod:
+    name: "🧪 [SIM] Rollout in Production"
+    runs-on: ubuntu-latest
+    needs: wait_for_prod_approval
+    strategy:
+      fail-fast: false
+      matrix:
+        cluster: ${{ fromJSON(github.event.inputs.prod_clusters) }}
+
+    steps:
+      - name: "Simulate Rollout Restart"
+        run: |
+          echo "This is a simulation."
+          echo "PRETEND: Restarting deployment in cluster ${{ matrix.cluster }}"
+          sleep 10 # Simulate work
