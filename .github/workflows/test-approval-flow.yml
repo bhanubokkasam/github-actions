@@ -23,7 +23,7 @@ jobs:
   #  SIMULATE DEPLOY TO DEMO
   # =================================================================
   deploy_demo:
-    name: "🧪 [SIM] Rollout in Demo"
+    name: " [SIM] Rollout in Demo"
     runs-on: ubuntu-latest
     environment: demo
     strategy:
@@ -42,7 +42,7 @@ jobs:
   #  APPROVAL GATE FOR UAT
   # =================================================================
   wait_for_uat_approval:
-    name: "✋ Wait for UAT Approval"
+    name: "Wait for UAT Approval"
     runs-on: ubuntu-latest
     needs: deploy_demo
     environment:
@@ -54,7 +54,7 @@ jobs:
   #  SIMULATE DEPLOY TO UAT
   # =================================================================
   deploy_uat:
-    name: "🧪 [SIM] Rollout in UAT"
+    name: "[SIM] Rollout in UAT"
     runs-on: ubuntu-latest
     needs: wait_for_uat_approval
     strategy:
@@ -73,7 +73,7 @@ jobs:
   #  APPROVAL GATE FOR PROD
   # =================================================================
   wait_for_prod_approval:
-    name: "✋ Wait for Prod Approval"
+    name: "Wait for Prod Approval"
     runs-on: ubuntu-latest
     needs: deploy_uat
     environment:
@@ -85,9 +85,11 @@ jobs:
   #  SIMULATE DEPLOY TO PROD
   # =================================================================
   deploy_prod:
-    name: "🧪 [SIM] Rollout in Production"
+    name: "[SIM] Rollout in Production"
     runs-on: ubuntu-latest
     needs: wait_for_prod_approval
+    environment:
+      name: prod
     strategy:
       fail-fast: false
       matrix:
