@@ -69,12 +69,16 @@ jobs:
               - Focused on the purpose of the changes.
               - Free of any session or logging details.
               - Excludes any mention of extensions or file types unless critical to understanding the change.
+              - Written in proper Markdown format for readability.
+              - Validates the correctness of commands and syntax, especially for YAML files and shell commands.
 
               Example:
               \`\`\`
               terraform/variables.tf
               - Updated the default value of the vpc_name variable from "eks-vpc" to "eks-vpc-test".
               - Added a new variable for subnet configuration.
+
+
               \`\`\`
 
               The changes to summarize are:
