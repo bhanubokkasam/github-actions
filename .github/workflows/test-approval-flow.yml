@@ -9,7 +9,7 @@ on:
       demo_clusters:
         description: 'Demo clusters (JSON array string)'
         required: true
-        default: '["demo-cluster-use1", "demo-cluster-usw2"]'
+        default: '["demo-cluster-use13", "demo-cluster-usw2"]'
       uat_clusters:
         description: 'UAT clusters (JSON array string)'
         required: true
@@ -39,7 +39,7 @@ jobs:
       - name: "Simulate Rollout Restart"
         run: |
           echo "This is a simulation."
-          echo "PRETEND: Restarting deployment in cluster ${{ matrix.cluster }}"
+          echo "PRETEND: Restarted deployment in cluster ${{ matrix.cluster }}"
           sleep 10 # Simulate work
 
   # =================================================================
@@ -80,6 +80,6 @@ jobs:
     steps:
       - name: "Simulate Rollout Restart"
         run: |
-          echo "This is a simulation."
+          echo "This is a simulation. But you can pretend it's real!"
           echo "PRETEND: Restarting deployment in cluster ${{ matrix.cluster }}"
-          sleep 10 # Simulate work
+          sleep 20 

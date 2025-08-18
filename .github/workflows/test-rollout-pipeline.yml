@@ -56,4 +56,4 @@ jobs:
           # can be targeted in the sandbox cluster.
           DEPLOYMENT_NAME="my-app-${{ matrix.environment_name }}"
           echo "Executing dry-run for deployment ${DEPLOYMENT_NAME}..."
-          kubectl rollout restart deployment/${DEPLOYMENT_NAME} --dry-run=client -o yaml
+          kubectl rollouts restart deployment/${DEPLOYMENT_NAME} --dry-run=client -o yaml
