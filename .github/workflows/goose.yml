@@ -56,32 +56,12 @@ jobs:
          - name: Create instructions for Goose
            run: |
               cat <<EOF > instructions.txt
-              Summarize the changes in the provided files. Use the following format for each file:
-              
-              \`\`\`
-              <filename/path>
-              - Change 1: [Brief description of the change]
-              - Change 2: [Brief description of the change]
-              \`\`\`
-
-              Ensure the summary is:
-              - Clear and concise.
-              - Focused on the purpose of the changes.
-              - Free of any session or logging details.
-              - Excludes any mention of extensions or file types unless critical to understanding the change.
-              - Written in proper Markdown format for readability.
-              - Validates the correctness of commands and syntax, especially for YAML files and shell commands.
-
-              Example:
-              \`\`\`
-              terraform/variables.tf
-              - Updated the default value of the vpc_name variable from "eks-vpc" to "eks-vpc-test".
-              - Added a new variable for subnet configuration.
-
-
-              \`\`\`
-
-              The changes to summarize are:
+              Create a summary of the changes provided. Don't provide any session or logging details.
+              The summary for each file should be brief and structured as:
+              <filename/path (wrapped in backticks)>
+                 - dot points of changes
+              You don't need any extensions, don't mention extensions at all.
+              The changes to summarise are:
               $(cat changes.txt)
               EOF
 
