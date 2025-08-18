@@ -48,7 +48,7 @@ jobs:
            run: |
               mkdir -p ~/.config/goose
               cat <<EOF > ~/.config/goose/config.yaml
-              GOOSE_PROVIDER: Google Gemini
+              GOOSE_PROVIDER: Google
               GOOSE_MODEL: gemini-2.0-flash
               keyring: false
               EOF
