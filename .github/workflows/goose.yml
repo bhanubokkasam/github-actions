@@ -12,6 +12,7 @@ permissions:
 
 env:
    PROVIDER_API_KEY: ${{ secrets.API_KEY }}
+   GOOGLE_API_KEY: ${{ secrets.API_KEY }}
    PR_NUMBER: ${{ github.event.pull_request.number }}
    GH_TOKEN: ${{ github.token }}
 
@@ -47,7 +48,7 @@ jobs:
            run: |
               mkdir -p ~/.config/goose
               cat <<EOF > ~/.config/goose/config.yaml
-              GOOSE_PROVIDER: google
+              GOOSE_PROVIDER: Google Gemini
               GOOSE_MODEL: gemini-2.0-flash
               keyring: false
               EOF
