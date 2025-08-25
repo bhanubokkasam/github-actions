@@ -27,7 +27,7 @@ variable "instance_type" {
 }
 
 variable "vpc_name" {
-  default = "eks-vpc-test"  
+  default = "eks-vpc"  
 }
 
 variable "vpc_cidr" {
