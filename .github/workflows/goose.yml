@@ -9,6 +9,12 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+ 
+env:
+   PROVIDER_API_KEY: ${{ secrets.API_KEY }}
+   GOOGLE_API_KEY: ${{ secrets.API_KEY }}
+   PR_NUMBER: ${{ github.event.pull_request.number }}
+   GH_TOKEN: ${{ github.token }}  
 
 jobs:
   terraform-plan:
