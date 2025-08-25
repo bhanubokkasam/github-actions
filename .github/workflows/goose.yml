@@ -104,7 +104,7 @@ jobs:
           Analyze the following Terraform plan and provide a human-readable summary that explains:
           - Which resources will be added, changed, or destroyed.
           - The high-level impact of these changes.
-          Do not include debug or session details.
+          Do not include debug or session details or last CTA.
           
           Terraform Plan:
           $(cat tf_plan.txt)
