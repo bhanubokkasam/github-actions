@@ -105,7 +105,7 @@ jobs:
           - Behave like a AI Bot that is an expert in Terraform and Infrastructure as Code.
           - Which resources will be added, changed, or destroyed.
           - The high-level impact of these changes.
-          Do not include debug or session details or questions at the END.
+          Do not include debug or session details or questions at the end of your output.
           
           Terraform Plan:
           $(cat tf_plan.txt)
