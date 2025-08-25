@@ -14,36 +14,41 @@ jobs:
   terraform-plan:
     name: "Terraform Plan"
     runs-on: ubuntu-latest
-    defaults:
-      run:
-         working-directory: ./terraform
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1          
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
 
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init
 
       - name: Terraform Plan
+        working-directory: terraform
         run: |
           terraform plan -no-color -out=tfplan
           terraform show -no-color tfplan > tf_plan.txt
+
+      - name: Debug - List Terraform Directory Contents
+        working-directory: terraform
+        run: ls -la
 
       - name: Upload Terraform Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
-          path: tf_plan.txt
+          path: terraform/tf_plan.txt
 
   goose-analysis:
     name: "Goose Analysis and Comment"
@@ -60,6 +65,9 @@ jobs:
         with:
           name: terraform-plan
           path: .
+
+      - name: Debug - List Downloaded Files
+        run: ls -la
 
       - name: Gather PR information
         run: |
@@ -88,7 +96,7 @@ jobs:
         run: |
           cat <<EOF > instructions.txt
           Analyze the following Terraform plan and provide a human-readable summary that explains:
-          - What resources will be added, changed, or destroyed.
+          - Which resources will be added, changed, or destroyed.
           - The high-level impact of these changes.
           Do not include debug or session details.
           
