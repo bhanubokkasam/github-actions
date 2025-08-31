@@ -1,87 +1,141 @@
-
-name: Goose
+name: Goose Terraform Plan Analysis
 
 on:
-   pull_request:
-      types: [opened, synchronize, reopened, labeled]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
 
 permissions:
-   contents: write
-   pull-requests: write
-   issues: write
-
+  contents: write
+  pull-requests: write
+  issues: write
+ 
 env:
    PROVIDER_API_KEY: ${{ secrets.API_KEY }}
    GOOGLE_API_KEY: ${{ secrets.API_KEY }}
    PR_NUMBER: ${{ github.event.pull_request.number }}
-   GH_TOKEN: ${{ github.token }}
+   GH_TOKEN: ${{ github.token }}  
 
 jobs:
-   goose-comment:
-      name: Goose Comment
-      runs-on: ubuntu-latest
-      steps:
-         - name: Check out repository
-           uses: actions/checkout@v4
-           with:
-              fetch-depth: 0
+  terraform-plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1          
 
-         - name: Gather PR information
-           run: |
-              {
-              echo "# Files Changed"
-              gh pr view $PR_NUMBER --json files \
-                 -q '.files[] | "* " + .path + " (" + (.additions|tostring) + " additions, " + (.deletions|tostring) + " deletions)"'
-              echo ""
-              echo "# Changes Summary"
-              gh pr diff $PR_NUMBER
-              } > changes.txt
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
 
-         - name: Install Goose CLI
-           run: |
-              mkdir -p /home/runner/.local/bin
-              curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh \
-              | CONFIGURE=false INSTALL_PATH=/home/runner/.local/bin bash
-              echo "/home/runner/.local/bin" >> $GITHUB_PATH
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
 
-         - name: Configure Goose
-           run: |
-              mkdir -p ~/.config/goose
-              cat <<EOF > ~/.config/goose/config.yaml
-              GOOSE_PROVIDER: google
-              GOOSE_MODEL: gemini-2.0-flash
-              keyring: false
-              EOF
+      - name: Terraform Plan
+        working-directory: terraform
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > tf_plan.txt
 
-         - name: Create instructions for Goose
-           run: |
-              cat <<EOF > instructions.txt
-              Create a summary of the changes provided. Don't provide any session or logging details.
-              The summary for each file should be brief and structured as:
-              <filename/path (wrapped in backticks)>
-                 - dot points of changes
-              You don't need any extensions, don't mention extensions at all.
-              The changes to summarise are:
-              $(cat changes.txt)
-              EOF
+      - name: Debug - List Terraform Directory Contents
+        working-directory: terraform
+        run: ls -la
 
-         - name: Test
-           run: cat instructions.txt
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform/tf_plan.txt
 
-         - name: Run Goose and filter output
-           run: |
-              goose run --instructions instructions.txt | \
-              # Remove ANSI color codes
-              sed -E 's/\x1B\[[0-9;]*[mK]//g' | \
-              # Remove session/logging lines
-              grep -v "logging to /home/runner/.config/goose/sessions/" | \
-              grep -v "^starting session" | \
-              grep -v "^Closing session" | \
-              # Trim trailing whitespace
-              sed 's/[[:space:]]*$//' \
-              > pr_comment.txt
+  goose-analysis:
+    name: "Goose Analysis and Comment"
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-         - name: Post comment to PR
-           run: |
-              cat -A pr_comment.txt
-              gh pr comment $PR_NUMBER --body-file pr_comment.txt
+      - name: Download Terraform Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: .
+
+      - name: Debug - List Downloaded Files
+        run: ls -la
+
+      - name: Gather PR information
+        run: |
+          {
+          echo "# Terraform Plan Preview"
+          cat tf_plan.txt
+          } > changes.txt
+
+      - name: Install Goose CLI
+        run: |
+          mkdir -p /home/runner/.local/bin
+          curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh \
+          | CONFIGURE=false INSTALL_PATH=/home/runner/.local/bin bash
+          echo "/home/runner/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure Goose
+        run: |
+          mkdir -p ~/.config/goose
+          cat <<EOF > ~/.config/goose/config.yaml
+          GOOSE_PROVIDER: google
+          GOOSE_MODEL: gemini-2.5-flash
+          keyring: false
+          EOF
+
+      - name: Create instructions for Goose
+        run: |
+          cat <<EOF > instructions.txt
+          Please analyze the following Terraform plan in detail and produce a concise, comprehensive summary for non-technical stakeholders. Your summary must adhere to the criteria below:
+
+          1. Resource Categorization:
+            - Clearly list which resources will be created, updated, or deleted.
+            - For each resource, include its unique identifier (such as name or ID).
+
+          2. Infrastructure Impact:
+            - Summarize the overall impact on our infrastructure.
+            - Outline potential effects on cost, performance, security, and dependencies.
+
+          3. Dependencies & Cascading Effects:
+            - Identify any critical dependencies between resources.
+            - Explain any potential cascading effects that could result from these changes.
+
+          4. Clarity & Precision:
+            - Use clear, non-technical language intended for high‑level decision makers.
+            - Exclude any debug information, session logs, or extraneous commentary.
+            - Avoid follow‑up questions and focus solely on factual, actionable insights.
+
+          Produce only a factual and succinct summary that facilitates informed decision-making about the proposed changes.
+
+          Terraform Plan:
+          $(cat tf_plan.txt)
+          EOF
+
+      - name: Run Goose and filter output
+        run: |
+          goose run --instructions instructions.txt | \
+          sed -E 's/\x1B\[[0-9;]*[mK]//g' | \
+          grep -v "logging to /home/runner/.config/goose/sessions/" | \
+          grep -v "^starting session" | \
+          grep -v "^Closing session" | \
+          sed 's/[[:space:]]*$//' \
+          > pr_comment.txt
+
+      - name: Post comment to PR
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body-file pr_comment.txt

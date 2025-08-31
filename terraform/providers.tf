@@ -1,12 +1,15 @@
 provider "aws" {
-  region = "us-west-2" 
+  region = "us-west-2"
 }
 
 terraform {
-  backend "s3" {
-    bucket                  = "terraform-s3-state"
-    key                     = "state/terraform.tfstate"
-    region                  = "us-west-2"
-    shared_credentials_file = "~/.aws/credentials"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.60.0"
+    }
+  }
+  backend "local" {
+    path = "terraform.tfstate"
   }
 }
