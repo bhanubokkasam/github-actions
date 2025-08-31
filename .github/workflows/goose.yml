@@ -101,12 +101,26 @@ jobs:
       - name: Create instructions for Goose
         run: |
           cat <<EOF > instructions.txt
-          Analyze the following Terraform plan and provide a comprehensive, human-readable summary. Your summary must:
-          - Clearly categorize which resources will be added, modified, or destroyed, and include each resource's unique identifier.
-          - Explain the high-level impact of these changes on our infrastructure, outlining potential effects on cost, performance, security, and dependencies.
-          - Describe any critical dependencies or cascading impacts between resources.
-          - Be succinct, precise, and avoid any debug details, session logs, or follow-up questions.
-          Do not include any extraneous commentary. Only produce a factual summary suitable for a non-technical stakeholder understanding our infrastructure changes.
+          Please analyze the following Terraform plan in detail and produce a concise, comprehensive summary for non-technical stakeholders. Your summary must adhere to the criteria below:
+
+          1. Resource Categorization:
+            - Clearly list which resources will be created, updated, or deleted.
+            - For each resource, include its unique identifier (such as name or ID).
+
+          2. Infrastructure Impact:
+            - Summarize the overall impact on our infrastructure.
+            - Outline potential effects on cost, performance, security, and dependencies.
+
+          3. Dependencies & Cascading Effects:
+            - Identify any critical dependencies between resources.
+            - Explain any potential cascading effects that could result from these changes.
+
+          4. Clarity & Precision:
+            - Use clear, non-technical language intended for high‑level decision makers.
+            - Exclude any debug information, session logs, or extraneous commentary.
+            - Avoid follow‑up questions and focus solely on factual, actionable insights.
+
+          Produce only a factual and succinct summary that facilitates informed decision-making about the proposed changes.
 
           Terraform Plan:
           $(cat tf_plan.txt)
